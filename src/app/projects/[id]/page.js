@@ -1,74 +1,104 @@
-export const dynamic = 'force-dynamic';
-
-import { db } from '@/lib/db';
-import Link from 'next/link'
+import { sql } from '@/lib/db';
+import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import Slider from '@/app/components/Slider';
 import styles from './ProjectPage.module.css';
 
+// 🚀 Senior Architect: ISR (Incremental Static Regeneration)
+// Stránka sa vygeneruje staticky a aktualizuje sa každú hodinu. Extrémne rýchle načítanie.
+export const revalidate = 3600;
+
+// Pomocná funkcia na formátovanie URL
 const formatUrl = (url) => {
   if (!url) return "#";
   return url.startsWith('http') ? url : `https://${url}`;
 };
 
+// 1. SEO: Dynamické generovanie meta tagov pre konkrétny projekt
+export async function generateMetadata({ params }) {
+  const { id } = await params;
+  
+  try {
+    const projectInfo = await sql`
+      SELECT title, description FROM portfolio_projects WHERE id = ${id} LIMIT 1
+    `;
+    
+    if (projectInfo.length > 0) {
+      return {
+        title: `${projectInfo[0].title} | Naše Portfólio`,
+        description: projectInfo[0].description,
+        openGraph: {
+          title: `${projectInfo[0].title} | Digitálna Agentúra`,
+          description: projectInfo[0].description,
+          locale: 'sk_SK',
+          type: 'article',
+        },
+      };
+    }
+  } catch (error) {
+    console.error('Chyba metadát:', error);
+  }
+  return { title: 'Detail projektu | Digitálna Agentúra' };
+}
+
 export default async function ProjectPage({ params }) {
   const { id } = await params;
 
-  // 1. ЗАПРОС ПРОЕКТА (ПОЛНЫЙ)
-  const { rows } = await db.query(
-    `
-    SELECT
-      p.id,
-      p.title,
-      p.description,
-      p.tech_stack,
-      p.client_name,
-      p.created_at,
-      p.site_url,
-      i.image_url,
-      i.is_main
-    FROM portfolio_projects p
-    LEFT JOIN portfolio_images i
-      ON i.project_id = p.id
-    WHERE p.id = $1
-    `,
-    [id]
-  );
+  let projectRows = [];
+  let reviews = [];
 
-  // 2. ЗАПРОС ОТЗЫВОВ (ПОЛНЫЙ)
-  const { rows: reviews } = await db.query(
-    `
-    SELECT 
-      id,
-      project_id,
-      author_name,
-      rating,
-      text,
-      is_public,
-      created_at
-    FROM portfolio_reviews 
-    WHERE project_id = $1 AND is_public = true
-    ORDER BY created_at DESC
-    `,
-    [id]
-  );
+  try {
+    // 2. BEZPEČNÝ DOTAZ NA PROJEKT (Neon)
+    projectRows = await sql`
+      SELECT
+        p.id,
+        p.title,
+        p.description,
+        p.tech_stack,
+        p.client_name,
+        p.created_at,
+        p.site_url,
+        i.image_url,
+        i.is_main
+      FROM portfolio_projects p
+      LEFT JOIN portfolio_images i ON i.project_id = p.id
+      WHERE p.id = ${id}
+    `;
 
-  if (rows.length === 0) {
-    return <h1 className={styles.title}>Project not found</h1>;
+    // 3. BEZPEČNÝ DOTAZ NA RECENZIE (Neon)
+    reviews = await sql`
+      SELECT 
+        id,
+        author_name,
+        rating,
+        text,
+        created_at
+      FROM portfolio_reviews 
+      WHERE project_id = ${id} AND is_public = true
+      ORDER BY created_at DESC
+    `;
+  } catch (error) {
+    console.error('Chyba databázy:', error);
   }
 
-  // ===== Собираем объект проекта =====
+  // Ak projekt neexistuje, vrátime korektný 404 status pre Google
+  if (!projectRows || projectRows.length === 0) {
+    notFound(); 
+  }
+
+  // ===== Agregácia objektu projektu =====
   const project = {
-    id: rows[0].id,
-    title: rows[0].title,
-    created_at: rows[0].created_at,
-    client_name: rows[0].client_name,
-    description: rows[0].description,
-    site_url: rows[0].site_url,
-    tech_stack: rows[0].tech_stack,
+    id: projectRows[0].id,
+    title: projectRows[0].title,
+    created_at: projectRows[0].created_at,
+    client_name: projectRows[0].client_name,
+    description: projectRows[0].description,
+    site_url: projectRows[0].site_url,
+    tech_stack: projectRows[0].tech_stack,
     images: []
   };
 
-  rows.forEach(row => {
+  projectRows.forEach(row => {
     if (row.image_url) {
       project.images.push({
         image_url: row.image_url,
@@ -82,23 +112,26 @@ export default async function ProjectPage({ params }) {
       <div className={styles.container}>
         <div className={styles.contentGrid}>
 
-          {/* ЛЕВАЯ ЧАСТЬ: ИНФО */}
+          {/* ĽAVÁ ČASŤ: INFO (Lokalizované do slovenčiny) */}
           <div className={styles.infoColumn}>
-            <h2 className={styles.title}>{project.title}</h2>
+            <h1 className={styles.title}>{project.title}</h1>
 
             <Link href={formatUrl(project.site_url)} target="_blank" className={styles.link}>
-              {project.site_url || "Go to website"} →
+              {project.site_url ? "Zobraziť projekt online" : "Odkaz nedostupný"} &rarr;
             </Link>
 
-            <span className={styles.date}>
-              The case is on display: {new Date(project.created_at).toLocaleDateString()}
-            </span>
+            <div className={styles.date}>
+              <span className="font-semibold">Dátum zverejnenia: </span>
+              {/* Lokalizácia dátumu pre slovenský trh */}
+              {new Date(project.created_at).toLocaleDateString('sk-SK')}
+            </div>
 
             <p className={styles.description}>{project.description}</p>
 
-            {/* ОТЗЫВЫ */}
+            {/* RECENZIE */}
             <div className={styles.reviewsContainer}>
-              {reviews.length > 0 && <h3>Reviews</h3>}
+              {reviews.length > 0 && <h3 className="text-2xl font-bold mb-4">Hodnotenia klientov</h3>}
+              
               {reviews.map(rev => (
                 <div key={rev.id} className={styles.reviewCard}>
                   <div className={styles.reviewTop}>
@@ -106,9 +139,9 @@ export default async function ProjectPage({ params }) {
                     <span className={styles.rating}>★ {rev.rating}/5</span>
                   </div>
                   <div className={styles.containerInfo}>
-                    <span className={styles.reviewText}>"{rev.text}"</span>
+                    <span className={styles.reviewText}>„{rev.text}“</span>
                     <small className={styles.reviewDate}>
-                      {new Date(rev.created_at).toLocaleDateString()}
+                      {new Date(rev.created_at).toLocaleDateString('sk-SK')}
                     </small>
                   </div>
                 </div>
@@ -116,16 +149,17 @@ export default async function ProjectPage({ params }) {
             </div>
           </div>
 
-          {/* ПРАВАЯ ЧАСТЬ: СЛАЙДЕР */}
-          {/* <div className={styles.galleryColumn}>
-            <iframe
-              className={styles.videoFrame}
-              src="https://www.youtube.com/embed/jpqhTcEf1BY"
-              title="YouTube video"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
-          </div> */}
+          {/* PRAVÁ ČASŤ: SLIDER / GALÉRIA */}
+          <div className={styles.galleryColumn}>
+            {/* Ochrana pred prázdnymi dátami: renderujeme Slider iba ak máme obrázky */}
+            {project.images.length > 0 ? (
+               <Slider images={project.images} />
+            ) : (
+              <div className="bg-gray-100 w-full h-64 flex items-center justify-center rounded-xl text-gray-400">
+                Obrázky sa pripravujú...
+              </div>
+            )}
+          </div>
 
         </div>
       </div>

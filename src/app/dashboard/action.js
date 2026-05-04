@@ -1,12 +1,20 @@
 "use server";
 
-import { db } from "@/lib/db";
+import { sql } from "@/lib/db"; // Используем наш Neon инстанс
 import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+
+// Функция отправки в Telegram (скрыта от клиента)
 async function sendToTelegram(text) {
   const token = process.env.TG_BOT_TOKEN;
   const chatId = process.env.TG_CHAT_ID;
+
+  // Проверка наличия ключей окружения для безопасного деплоя
+  if (!token || !chatId) {
+    console.error("Kritická chyba: Chýbajú Telegram credentials v .env súbore.");
+    throw new Error("Konfigurácia servera je neúplná.");
+  }
 
   const url = `https://api.telegram.org/bot${token}/sendMessage`;
 
@@ -21,97 +29,84 @@ async function sendToTelegram(text) {
   });
 
   if (!res.ok) {
-    throw new Error("Ошибка отправки в Telegram");
+    throw new Error(`Telegram API chyba: ${res.status}`);
   }
 }
 
-// export async function sendRequest(data) { 
-//    const session = await getServerSession(authOptions);
-   
-//    const { title, description, budget, telegram, phone, mail } = data;
+export async function sendRequest(formData) {
+  try {
+    const session = await getServerSession(authOptions);
 
-//   if (!title || !description) {
-//     throw new Error("Заполните обязательные поля");
-//   }
+    const data = formData instanceof FormData
+      ? Object.fromEntries(formData)
+      : formData || {};
 
-//   if (session) {
-//     await db.query(
-//       `INSERT INTO project_requests (user_id, title, description, budget)
-//        VALUES ($1, $2, $3, $4)`,
-//       [session.user.id, title, description, budget || null]
-//     );
+    // 🔹 Стандартизированное извлечение данных
+    const title = typeof data.title === 'string' ? data.title.trim() : '';
+    const description = typeof data.description === 'string' ? data.description.trim() : '';
+    const budget = typeof data.budget === 'string' ? data.budget.trim() : '';
+    const telegram = typeof data.telegram === 'string' ? data.telegram.trim() : '';
+    const phone = typeof data.phone === 'string' ? data.phone.trim() : '';
+    const mail = typeof data.mail === 'string' ? data.mail.trim() : '';
 
-//     revalidatePath("/dashboard");
-//     return;
-//   }
+    // 🔐 Серверная валидация
+    if (!title || !description) {
+      return { 
+        success: false, 
+        error: "Vyplňte prosím všetky povinné polia (Názov a Popis)." 
+      };
+    }
 
-//   if (!phone || !mail) {
-//     throw new Error("Введите телефон и email");
-//   }
+    // 🔹 АВТОРИЗОВАННЫЙ ПОЛЬЗОВАТЕЛЬ → Сохранение в Neon DB
+    if (session) {
+      // Используем шаблонные строки Neon для безопасности
+      await sql`
+        INSERT INTO project_requests (user_id, title, description, budget)
+        VALUES (${session.user.id}, ${title}, ${description}, ${budget || null})
+      `;
 
-//   const message = `
-// 🆕 Заявка с сайта
+      // Инвалидация кэша для мгновенного обновления UI
+      revalidatePath("/dashboard");
+      return { 
+        success: true, 
+        message: "Vaša požiadavka bola úspešne uložená do systému." 
+      };
+    }
 
-// 📌 Проект: ${title}
-// 📝 Описание: ${description}
-// 💰 Бюджет: ${budget || "не указан"}
+    // 🔹 ГОСТЬ → Отправка в TELEGRAM
+    if (!phone || !mail) {
+      return { 
+        success: false, 
+        error: "Pre odoslanie žiadosti ako hosť zadajte telefón a e-mail." 
+      };
+    }
 
-// 📞 Телефон: ${phone}
-// 📧 Email: ${mail}
-// 📧 telegram: ${telegram}
-//   `;
+    const message = `
+🆕 <b>Nová žiadosť z webu (Hosť)</b>
 
-//   await sendToTelegram(message);
-// }
-function getValue(data, key) {
-  return data instanceof FormData ? data.get(key) : data?.[key];
-}
+📌 <b>Projekt:</b> ${title}
+📝 <b>Popis:</b> ${description}
+💰 <b>Rozpočet:</b> ${budget || "nešpecifikovaný"}
 
-export async function sendRequest(data) {
-  const session = await getServerSession(authOptions);
-
-  // 🔹 Универсально достаём данные
-  const title = getValue(data, "title")?.toString().trim();
-  const description = getValue(data, "description")?.toString().trim();
-  const budget = getValue(data, "budget")?.toString().trim();
-  const telegram = getValue(data, "telegram")?.toString().trim();
-  const phone = getValue(data, "phone")?.toString().trim();
-  const mail = getValue(data, "mail")?.toString().trim();
-
-  // 🔐 Минимальная серверная валидация
-  if (!title || !description) {
-    return { error: "Заполните обязательные поля" };
-  }
-
-  // 🔹 АВТОРИЗОВАННЫЙ ПОЛЬЗОВАТЕЛЬ → БД
-  if (session) {
-    await db.query(
-      `INSERT INTO project_requests (user_id, title, description, budget)
-       VALUES ($1, $2, $3, $4)`,
-      [session.user.id, title, description, budget || null]
-    );
-
-    revalidatePath("/dashboard");
-    return { success: true };
-  }
-
-  // 🔹 ГОСТЬ → TELEGRAM
-  if (!phone || !mail) {
-    return { error: "Введите телефон и email" };
-  }
-
-  const message = `
-🆕 Заявка с сайта
-
-📌 Проект: ${title}
-📝 Описание: ${description}
-💰 Бюджет: ${budget || "не указан"}
-
-📞 Телефон: ${phone}
-📧 Email: ${mail}
-📧 Telegram: ${telegram || "не указан"}
+📞 <b>Telefón:</b> ${phone}
+📧 <b>Email:</b> ${mail}
+💬 <b>Telegram:</b> ${telegram || "nešpecifikovaný"}
 `;
 
-  await sendToTelegram(message);
-  return { success: true };
+    await sendToTelegram(message);
+    
+    return { 
+      success: true, 
+      message: "Žiadosť bola úspešne odoslaná. Čoskoro sa vám ozveme." 
+    };
+
+  } catch (error) {
+    // Логируем ошибку для разработчиков (не отдаем детали клиенту)
+    console.error("Chyba v Server Action sendRequest:", error);
+    
+    return { 
+      success: false, 
+      error: "Vyskytla sa neočakávaná chyba na serveri. Skúste to prosím neskôr." 
+    };
+  }
 }

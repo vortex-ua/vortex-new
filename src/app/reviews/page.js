@@ -1,83 +1,107 @@
-export const dynamic = 'force-dynamic';
-
-import { db } from "@/lib/db";
+// src/app/reviews/page.js
+import { sql } from "@/lib/db"; // Используем наш настроенный клиент Neon
 import { CreateReviews } from "../admin/reviews";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import styles from "./Reviews.module.css";
 
+// 🚀 Senior Architect Tip: Используем ISR вместо force-dynamic. 
+// Страница будет статичной и быстрой, обновляясь в фоне раз в 10 минут.
+export const revalidate = 600; 
+
+// SEO Мета-данные для словацкого рынка
+export const metadata = {
+  title: 'Recenzie klientov | Naša Agentúra',
+  description: 'Prečítajte si skúsenosti našich klientov alebo nám zanechajte vlastnú spätnú väzbu.',
+};
+
 export default async function Reviews({ searchParams }) {
-  // ДОБАВЛЕН AWAIT: Ждем разрешения Promise перед чтением параметров
+  // Next.js 15: searchParams je Promise, musíme ho awaitnuť
   const params = await searchParams;
   const isSuccess = params?.success === 'true';
 
-  const { rows: projects } = await db.query(`
-    SELECT id, title
-    FROM portfolio_projects
-    ORDER BY id DESC
-  `);
+  let projects = [];
+  let reviews = [];
 
-  const { rows: reviews } = await db.query(`
-    SELECT
-      r.id,
-      r.author_name,
-      r.rating,
-      r.text,
-      p.title AS project_title
-    FROM portfolio_reviews r
-    JOIN portfolio_projects p
-      ON p.id = r.project_id
-    WHERE r.is_public = true
-    ORDER BY r.id DESC
-  `);
+  try {
+    // Получаем проекты для селекта (Neon синтаксис: возвращает массив напрямую)
+    projects = await sql`
+      SELECT id, title
+      FROM portfolio_projects
+      ORDER BY id DESC
+    `;
 
+    // Получаем опубликованные отзывы
+    reviews = await sql`
+      SELECT
+        r.id,
+        r.author_name,
+        r.rating,
+        r.text,
+        p.title AS project_title
+      FROM portfolio_reviews r
+      JOIN portfolio_projects p
+        ON p.id = r.project_id
+      WHERE r.is_public = true
+      ORDER BY r.id DESC
+    `;
+  } catch (error) {
+    console.error("Chyba pri načítaní dát z databázy:", error);
+  }
+
+  // Server Action для обработки формы
   async function submitReview(formData) {
     "use server";
     
-    await CreateReviews(formData);
+    try {
+      await CreateReviews(formData);
+    } catch (e) {
+      console.error("Chyba pri vytváraní recenzie:", e);
+      return;
+    }
     redirect("/reviews?success=true"); 
   }
 
   return (
     <section className={styles.section}>
       <div className={styles.container}>
-        <h2 className={styles.mainTitle}>Customer Reviews</h2>
+        <h2 className={styles.mainTitle}>Recenzie <span>našich klientov</span></h2>
 
-        {/* СПИСОК ОТЗЫВОВ */}
+        {/* ZOZNAM RECENZIÍ */}
         <div className={styles.reviewsList}>
-          {reviews.length === 0 && (
+          {reviews.length === 0 ? (
             <p className={styles.emptyMessage}>
-              There are no reviews published yet. Be the first!
+              Zatiaľ neboli publikované žiadne recenzie. Buďte prvý!
             </p>
-          )}
+          ) : (
+            reviews.map((review) => (
+              <div className={styles.reviewCard} key={review.id}>
+                <div className={styles.cardHeader}>
+                  <div>
+                    <span className={styles.projectBadge}>
+                      Projekt: {review.project_title}
+                    </span>
+                    <h4 className={styles.authorName}>{review.author_name}</h4>
+                  </div>
 
-          {reviews.map((review) => (
-            <div className={styles.reviewCard} key={review.id}>
-              <div className={styles.cardHeader}>
-                <div>
-                  <span className={styles.projectBadge}>
-                    project: {review.project_title}
-                  </span>
-                  <h4 className={styles.authorName}>{review.author_name}</h4>
+                  <div className={styles.ratingBadge}>
+                    <span>★</span> {review.rating}/5
+                  </div>
                 </div>
 
-                <div className={styles.ratingBadge}>
-                  <span>★</span> {review.rating}/5
-                </div>
+                <p className={styles.reviewText}>{review.text}</p>
               </div>
-
-              <p className={styles.reviewText}>{review.text}</p>
-            </div>
-          ))}
+            ))
+          )}
         </div>
 
-        {/* ФОРМА ИЛИ СООБЩЕНИЕ ОБ УСПЕХЕ */}
+        {/* FORMA ALEBO POTVRDENIE */}
         <div className={styles.formWrapper}>
           {isSuccess ? (
             <div style={{ textAlign: "center", padding: "2rem 0" }}>
-              <h3 className={styles.formTitle}>Thank you!</h3>
+              <h3 className={styles.formTitle}>Ďakujeme!</h3>
               <p style={{ marginBottom: "1rem", color: "var(--text-color, #666)" }}>
-                Your review has been successfully submitted and sent for moderation.
+                Vaša recenzia bola úspešne odoslaná a čaká na schválenie administrátorom.
               </p>
               
               <Link 
@@ -85,15 +109,15 @@ export default async function Reviews({ searchParams }) {
                 className={styles.submitButton} 
                 style={{ display: "inline-block", textDecoration: "none" }}
               >
-                Write another review
+                Napísať ďalšiu recenziu
               </Link>
             </div>
           ) : (
             <form action={submitReview} className={styles.formGrid}>
-              <h3 className={styles.formTitle}>Leave a review</h3>
+              <h3 className={styles.formTitle}>Napíšte recenziu</h3>
 
               <select name="project_id" required className={styles.select}>
-                <option value="">Select a project...</option>
+                <option value="">Vyberte projekt...</option>
                 {projects.map((project) => (
                   <option key={project.id} value={project.id}>
                     {project.title}
@@ -103,29 +127,29 @@ export default async function Reviews({ searchParams }) {
 
               <input
                 name="author_name"
-                placeholder="Name"
+                placeholder="Vaše meno"
                 required
                 className={styles.input}
               />
 
               <select name="raiting" required className={styles.select}>
-                <option value="">Assessment (1-5)</option>
-                <option value="5">5 — Excellent</option>
-                <option value="4">4 — Good</option>
-                <option value="3">3 — Normal</option>
-                <option value="2">2 — Bad</option>
-                <option value="1">1 — Terrible</option>
+                <option value="">Hodnotenie (1-5)</option>
+                <option value="5">5 — Výborné</option>
+                <option value="4">4 — Veľmi dobré</option>
+                <option value="3">3 — Dobré</option>
+                <option value="2">2 — Slabšie</option>
+                <option value="1">1 — Nedostatočné</option>
               </select>
 
               <textarea
                 name="text"
-                placeholder="Tell us more about working with us..."
+                placeholder="Povedzte nám viac o vašej skúsenosti..."
                 required
                 className={styles.textarea}
               />
 
               <button type="submit" className={styles.submitButton}>
-                Send feedback
+                Odoslať spätnú väzbu
               </button>
             </form>
           )}
