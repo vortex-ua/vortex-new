@@ -3,7 +3,7 @@ export default function Requests({ requests }) {
 
     return (
         <section>
-            <h1>заявки</h1>
+            <h1>Requests</h1>
 
             <ul>
                 {requests.map(request => (
@@ -24,9 +24,9 @@ export default function Requests({ requests }) {
                             </div>
                             <select name="status" defaultValue={request.status}>
                                 <option value="new">new</option>
-                                <option value="review">В рассмотрении</option>
-                                <option value="in_progress">В разработке</option>
-                                <option value="paid">Оплачено</option>
+                                <option value="review">In review</option>
+                                <option value="in_progress">In progress</option>
+                                <option value="paid">Paid</option>
                             </select>
                             <button>💾</button>
                         </form>

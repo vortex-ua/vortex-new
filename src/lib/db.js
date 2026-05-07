@@ -6,7 +6,7 @@ import { Pool } from 'pg';
 // Если URL базы данных не передан, мы роняем приложение с понятной ошибкой (Slovak), 
 // чтобы не искать причину в абстрактных логах.
 if (!process.env.DATABASE_URL) {
-  throw new Error('Kritická chyba: Chýba premenná prostredia DATABASE_URL pre Neon databázu.');
+  throw new Error('Critical error: DATABASE_URL environment variable is missing for Neon database.');
 }
 
 // 2. Инициализация подключения (KISS)

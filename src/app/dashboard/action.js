@@ -12,8 +12,8 @@ async function sendToTelegram(text) {
 
   // Проверка наличия ключей окружения для безопасного деплоя
   if (!token || !chatId) {
-    console.error("Kritická chyba: Chýbajú Telegram credentials v .env súbore.");
-    throw new Error("Konfigurácia servera je neúplná.");
+    console.error("Critical error: Missing Telegram credentials in .env.");
+    throw new Error("Server configuration is incomplete.");
   }
 
   const url = `https://api.telegram.org/bot${token}/sendMessage`;
@@ -53,7 +53,7 @@ export async function sendRequest(formData) {
     if (!title || !description) {
       return { 
         success: false, 
-        error: "Vyplňte prosím všetky povinné polia (Názov a Popis)." 
+        error: "Please fill out all required fields (Title and Description)." 
       };
     }
 
@@ -69,7 +69,7 @@ export async function sendRequest(formData) {
       revalidatePath("/dashboard");
       return { 
         success: true, 
-        message: "Vaša požiadavka bola úspešne uložená do systému." 
+        message: "Your request has been successfully saved." 
       };
     }
 
@@ -77,36 +77,36 @@ export async function sendRequest(formData) {
     if (!phone || !mail) {
       return { 
         success: false, 
-        error: "Pre odoslanie žiadosti ako hosť zadajte telefón a e-mail." 
+        error: "To submit a request as a guest, please provide phone and email." 
       };
     }
 
     const message = `
-🆕 <b>Nová žiadosť z webu (Hosť)</b>
+🆕 <b>New request from website (Guest)</b>
 
-📌 <b>Projekt:</b> ${title}
-📝 <b>Popis:</b> ${description}
-💰 <b>Rozpočet:</b> ${budget || "nešpecifikovaný"}
+📌 <b>Project:</b> ${title}
+📝 <b>Description:</b> ${description}
+💰 <b>Budget:</b> ${budget || "unspecified"}
 
-📞 <b>Telefón:</b> ${phone}
+📞 <b>Phone:</b> ${phone}
 📧 <b>Email:</b> ${mail}
-💬 <b>Telegram:</b> ${telegram || "nešpecifikovaný"}
+💬 <b>Telegram:</b> ${telegram || "unspecified"}
 `;
 
     await sendToTelegram(message);
     
     return { 
       success: true, 
-      message: "Žiadosť bola úspešne odoslaná. Čoskoro sa vám ozveme." 
+      message: "Your request was sent successfully. We will contact you soon." 
     };
 
   } catch (error) {
     // Логируем ошибку для разработчиков (не отдаем детали клиенту)
-    console.error("Chyba v Server Action sendRequest:", error);
+    console.error("Error in Server Action sendRequest:", error);
     
     return { 
       success: false, 
-      error: "Vyskytla sa neočakávaná chyba na serveri. Skúste to prosím neskôr." 
+      error: "An unexpected server error occurred. Please try again later." 
     };
   }
 }

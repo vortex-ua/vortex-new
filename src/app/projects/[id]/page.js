@@ -5,16 +5,16 @@ import Slider from '@/app/components/Slider';
 import styles from './ProjectPage.module.css';
 
 // 🚀 Senior Architect: ISR (Incremental Static Regeneration)
-// Stránka sa vygeneruje staticky a aktualizuje sa každú hodinu. Extrémne rýchle načítanie.
+// The page is generated statically and refreshed every hour for extremely fast loading.
 export const revalidate = 3600;
 
-// Pomocná funkcia na formátovanie URL
+// Helper function to format URLs
 const formatUrl = (url) => {
   if (!url) return "#";
   return url.startsWith('http') ? url : `https://${url}`;
 };
 
-// 1. SEO: Dynamické generovanie meta tagov pre konkrétny projekt
+// 1. SEO: Dynamic metadata generation for each project
 export async function generateMetadata({ params }) {
   const { id } = await params;
   
@@ -25,20 +25,20 @@ export async function generateMetadata({ params }) {
     
     if (projectInfo.length > 0) {
       return {
-        title: `${projectInfo[0].title} | Naše Portfólio`,
+        title: `${projectInfo[0].title} | Our Portfolio`,
         description: projectInfo[0].description,
         openGraph: {
-          title: `${projectInfo[0].title} | Digitálna Agentúra`,
+          title: `${projectInfo[0].title} | Digital Agency`,
           description: projectInfo[0].description,
-          locale: 'sk_SK',
+          locale: 'en_US',
           type: 'article',
         },
       };
     }
   } catch (error) {
-    console.error('Chyba metadát:', error);
+    console.error('Error generating metadata:', error);
   }
-  return { title: 'Detail projektu | Digitálna Agentúra' };
+  return { title: 'Project details | Digital Agency' };
 }
 
 export default async function ProjectPage({ params }) {
@@ -48,7 +48,7 @@ export default async function ProjectPage({ params }) {
   let reviews = [];
 
   try {
-    // 2. BEZPEČNÝ DOTAZ NA PROJEKT (Neon)
+    // 2. SAFE PROJECT QUERY (Neon)
     projectRows = await sql`
       SELECT
         p.id,
@@ -65,7 +65,7 @@ export default async function ProjectPage({ params }) {
       WHERE p.id = ${id}
     `;
 
-    // 3. BEZPEČNÝ DOTAZ NA RECENZIE (Neon)
+    // 3. SAFE REVIEWS QUERY (Neon)
     reviews = await sql`
       SELECT 
         id,
@@ -78,15 +78,15 @@ export default async function ProjectPage({ params }) {
       ORDER BY created_at DESC
     `;
   } catch (error) {
-    console.error('Chyba databázy:', error);
+    console.error('Database error:', error);
   }
 
-  // Ak projekt neexistuje, vrátime korektný 404 status pre Google
+  // If the project does not exist, return a proper 404 status for Google
   if (!projectRows || projectRows.length === 0) {
     notFound(); 
   }
 
-  // ===== Agregácia objektu projektu =====
+  // ===== Aggregate project object =====
   const project = {
     id: projectRows[0].id,
     title: projectRows[0].title,
@@ -112,25 +112,24 @@ export default async function ProjectPage({ params }) {
       <div className={styles.container}>
         <div className={styles.contentGrid}>
 
-          {/* ĽAVÁ ČASŤ: INFO (Lokalizované do slovenčiny) */}
+          {/* LEFT SIDE: INFO */}
           <div className={styles.infoColumn}>
             <h1 className={styles.title}>{project.title}</h1>
 
             <Link href={formatUrl(project.site_url)} target="_blank" className={styles.link}>
-              {project.site_url ? "Zobraziť projekt online" : "Odkaz nedostupný"} &rarr;
+              {project.site_url ? "View project online" : "Link unavailable"} &rarr;
             </Link>
 
             <div className={styles.date}>
-              <span className="font-semibold">Dátum zverejnenia: </span>
-              {/* Lokalizácia dátumu pre slovenský trh */}
-              {new Date(project.created_at).toLocaleDateString('sk-SK')}
+              <span className="font-semibold">Published on: </span>
+              {new Date(project.created_at).toLocaleDateString('en-US')}
             </div>
 
             <p className={styles.description}>{project.description}</p>
 
             {/* RECENZIE */}
             <div className={styles.reviewsContainer}>
-              {reviews.length > 0 && <h3 className="text-2xl font-bold mb-4">Hodnotenia klientov</h3>}
+              {reviews.length > 0 && <h3 className="text-2xl font-bold mb-4">Client reviews</h3>}
               
               {reviews.map(rev => (
                 <div key={rev.id} className={styles.reviewCard}>
@@ -149,14 +148,14 @@ export default async function ProjectPage({ params }) {
             </div>
           </div>
 
-          {/* PRAVÁ ČASŤ: SLIDER / GALÉRIA */}
+{/* RIGHT SIDE: SLIDER / GALLERY */}
           <div className={styles.galleryColumn}>
-            {/* Ochrana pred prázdnymi dátami: renderujeme Slider iba ak máme obrázky */}
+            {/* Guard against empty data: render Slider only if images exist */}
             {project.images.length > 0 ? (
                <Slider images={project.images} />
             ) : (
               <div className="bg-gray-100 w-full h-64 flex items-center justify-center rounded-xl text-gray-400">
-                Obrázky sa pripravujú...
+                Images are coming soon...
               </div>
             )}
           </div>

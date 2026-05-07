@@ -25,33 +25,33 @@ export default async function ReviewsSection() {
             ORDER BY created_at DESC
         `;
 
-        // Безопасная сериализация дат для передачи в Client Component
-        // Проверяем наличие created_at, чтобы избежать ошибки .toISOString() of null
+        // Safe serialization of dates for passing to the Client Component
+        // Check created_at exists to avoid .toISOString() of null
         reviews = data.map((r) => ({
             ...r,
             created_at: r.created_at ? new Date(r.created_at).toISOString() : null,
         }));
 
     } catch (error) {
-        // Логируем ошибку на сервере для отладки
-        console.error('Chyba pri načítaní recenzií z databázy Neon:', error);
-        // В случае ошибки reviews остается пустым массивом, UI не падает
+        // Log error on the server for debugging
+        console.error('Error loading reviews from Neon database:', error);
+        // If an error occurs, reviews remains an empty array and UI stays stable
     }
 
     return (
         <section className="py-16 bg-gray-50 overflow-hidden">
             <div className="container mx-auto px-4">
-                {/* Локализация для словацкого рынка */}
+                {/* Reviews section heading */}
                 <h2 className="text-3xl font-bold text-center mb-12 text-gray-900">
-                    Čo o nás hovoria <span className="text-blue-600">klienti</span>
+                    What our <span className="text-blue-600">clients</span> say
                 </h2>
 
-                {/* Защита от пустого рендера */}
+                {/* Empty state fallback */}
                 {reviews && reviews.length > 0 ? (
                     <ReviewsSlider reviews={reviews} />
                 ) : (
                     <p className="text-center text-gray-500">
-                        Momentálne pre vás pripravujeme nové referencie od našich klientov.
+                        We are preparing new client reviews for you.
                     </p>
                 )}
             </div>

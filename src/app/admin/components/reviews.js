@@ -3,7 +3,7 @@ import { CreateReviews, UpdateReviews, DeleteReviews } from "../reviews";
 export default function Reviews({ reviews, projects }) {
   return (
     <section>
-      <h2>Отзывы (админка)</h2>
+      <h2>Reviews (admin)</h2>
 
       {reviews.map(review => {
         const project = projects.find(
@@ -14,15 +14,15 @@ export default function Reviews({ reviews, projects }) {
           <div key={review.id} className="review-blockRess">
             <div className="review-cont">
               <span>
-                Проект: {project ? project.title : "Не найден"}
+                Project: {project ? project.title : "Not found"}
               </span>
 
-              <span>Имя автора: {review.author_name}</span>
-              <span>Рейтинг отзыва: {review.rating}</span>
+              <span>Author name: {review.author_name}</span>
+              <span>Review rating: {review.rating}</span>
               <span>
-                Опубликован: {review.is_public ? "да" : "нет"}
+                Published: {review.is_public ? "yes" : "no"}
               </span>
-              <span>Текст отзыва: {review.text}</span>
+              <span>Review text: {review.text}</span>
             </div>
 
             {/* UPDATE */}
@@ -47,26 +47,18 @@ export default function Reviews({ reviews, projects }) {
                 defaultValue={review.text}
               />
 
-              {/* <label>
-                <input
-                  type="checkbox"
-                  name="is_public"
-                  defaultChecked={review.is_public}
-                />
-                Опубликован
-              </label> */}
               <label className="checkbox-container">
                 <input type="checkbox" name="is_public" defaultChecked={review.is_public} />
                 <span className="checkmark"></span>
-                <span className="checkbox-text">Опубликован</span>
+                <span className="checkbox-text">Published</span>
               </label>
-              <button type="submit">Сохранить</button>
+              <button type="submit">Save</button>
             </form>
 
             {/* DELETE */}
             <form className='formRess' action={DeleteReviews}>
               <input type="hidden" name="id" value={review.id} />
-              <button type="submit">Удалить</button>
+              <button type="submit">Delete</button>
             </form>
           </div>
         );
@@ -76,10 +68,10 @@ export default function Reviews({ reviews, projects }) {
 
       {/* CREATE */}
       <form className='formRess reviewRess' action={CreateReviews}>
-        <h3>Добавить отзыв</h3>
+        <h3>Add review</h3>
 
         <select name="project_id" required>
-          <option value="">Выберите проект</option>
+          <option value="">Choose a project</option>
           {projects.map(project => (
             <option key={project.id} value={project.id}>
               {project.title}
@@ -89,13 +81,13 @@ export default function Reviews({ reviews, projects }) {
 
         <input
           name="author_name"
-          placeholder="Имя автора"
+          placeholder="Author name"
           required
         />
 
-        {/* ❗ ИСПРАВЛЕНО */}
+        {/* ❗ FIXED */}
         <select name="rating" required>
-          <option value="">Выберите оценку</option>
+          <option value="">Choose rating</option>
           <option value="1">1</option>
           <option value="2">2</option>
           <option value="3">3</option>
@@ -105,11 +97,11 @@ export default function Reviews({ reviews, projects }) {
 
         <textarea
           name="text"
-          placeholder="Текст отзыва"
+          placeholder="Review text"
           required
         />
 
-        <button type="submit">Добавить</button>
+        <button type="submit">Add</button>
       </form>
     </section>
   );

@@ -3,11 +3,11 @@ export default function Post({ posts }) {
 
     return (
         <section>
-            <h1>Посты</h1>
+            <h1>Posts</h1>
 
             <form action={createPost} className='formRess'>
-                <input name="title" placeholder="Новый пост" required />
-                <button>Добавить</button>
+                <input name="title" placeholder="New post" required />
+                <button>Add</button>
             </form>
 
             <ul className='ulRess'>

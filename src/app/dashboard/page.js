@@ -92,7 +92,7 @@ export default async function DashboardPage({ searchParams }) {
                 <Chat 
                   roomId={`room_${chatWith}`} 
                   senderId={session.user.id} 
-                  senderName="Администратор"
+                  senderName="Administrator"
                 />
               </>
             ) : (

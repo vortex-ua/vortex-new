@@ -9,14 +9,14 @@ import styles from "./Reviews.module.css";
 // Страница будет статичной и быстрой, обновляясь в фоне раз в 10 минут.
 export const revalidate = 600; 
 
-// SEO Мета-данные для словацкого рынка
+// SEO metadata for English site
 export const metadata = {
-  title: 'Recenzie klientov | Naša Agentúra',
-  description: 'Prečítajte si skúsenosti našich klientov alebo nám zanechajte vlastnú spätnú väzbu.',
+  title: 'Client reviews | Our Agency',
+  description: 'Read our clients’ experiences or leave your own feedback.',
 };
 
 export default async function Reviews({ searchParams }) {
-  // Next.js 15: searchParams je Promise, musíme ho awaitnuť
+  // Next.js 15: searchParams is a Promise, so we await it
   const params = await searchParams;
   const isSuccess = params?.success === 'true';
 
@@ -46,7 +46,7 @@ export default async function Reviews({ searchParams }) {
       ORDER BY r.id DESC
     `;
   } catch (error) {
-    console.error("Chyba pri načítaní dát z databázy:", error);
+    console.error("Error loading data from database:", error);
   }
 
   // Server Action для обработки формы
@@ -56,7 +56,7 @@ export default async function Reviews({ searchParams }) {
     try {
       await CreateReviews(formData);
     } catch (e) {
-      console.error("Chyba pri vytváraní recenzie:", e);
+      console.error("Error creating review:", e);
       return;
     }
     redirect("/reviews?success=true"); 
@@ -65,13 +65,13 @@ export default async function Reviews({ searchParams }) {
   return (
     <section className={styles.section}>
       <div className={styles.container}>
-        <h2 className={styles.mainTitle}>Recenzie <span>našich klientov</span></h2>
+        <h2 className={styles.mainTitle}>Reviews <span>from our clients</span></h2>
 
-        {/* ZOZNAM RECENZIÍ */}
+        {/* REVIEWS LIST */}
         <div className={styles.reviewsList}>
           {reviews.length === 0 ? (
             <p className={styles.emptyMessage}>
-              Zatiaľ neboli publikované žiadne recenzie. Buďte prvý!
+              No reviews have been published yet. Be the first!
             </p>
           ) : (
             reviews.map((review) => (
@@ -99,9 +99,9 @@ export default async function Reviews({ searchParams }) {
         <div className={styles.formWrapper}>
           {isSuccess ? (
             <div style={{ textAlign: "center", padding: "2rem 0" }}>
-              <h3 className={styles.formTitle}>Ďakujeme!</h3>
+              <h3 className={styles.formTitle}>Thank you!</h3>
               <p style={{ marginBottom: "1rem", color: "var(--text-color, #666)" }}>
-                Vaša recenzia bola úspešne odoslaná a čaká na schválenie administrátorom.
+                Your review has been submitted successfully and is awaiting admin approval.
               </p>
               
               <Link 
@@ -109,15 +109,15 @@ export default async function Reviews({ searchParams }) {
                 className={styles.submitButton} 
                 style={{ display: "inline-block", textDecoration: "none" }}
               >
-                Napísať ďalšiu recenziu
+                Write another review
               </Link>
             </div>
           ) : (
             <form action={submitReview} className={styles.formGrid}>
-              <h3 className={styles.formTitle}>Napíšte recenziu</h3>
+              <h3 className={styles.formTitle}>Write a review</h3>
 
               <select name="project_id" required className={styles.select}>
-                <option value="">Vyberte projekt...</option>
+                <option value="">Choose a project...</option>
                 {projects.map((project) => (
                   <option key={project.id} value={project.id}>
                     {project.title}
@@ -127,29 +127,29 @@ export default async function Reviews({ searchParams }) {
 
               <input
                 name="author_name"
-                placeholder="Vaše meno"
+                placeholder="Your name"
                 required
                 className={styles.input}
               />
 
               <select name="raiting" required className={styles.select}>
-                <option value="">Hodnotenie (1-5)</option>
-                <option value="5">5 — Výborné</option>
-                <option value="4">4 — Veľmi dobré</option>
-                <option value="3">3 — Dobré</option>
-                <option value="2">2 — Slabšie</option>
-                <option value="1">1 — Nedostatočné</option>
+                <option value="">Rating (1-5)</option>
+                <option value="5">5 — Excellent</option>
+                <option value="4">4 — Very good</option>
+                <option value="3">3 — Good</option>
+                <option value="2">2 — Fair</option>
+                <option value="1">1 — Poor</option>
               </select>
 
               <textarea
                 name="text"
-                placeholder="Povedzte nám viac o vašej skúsenosti..."
+                placeholder="Tell us more about your experience..."
                 required
                 className={styles.textarea}
               />
 
               <button type="submit" className={styles.submitButton}>
-                Odoslať spätnú väzbu
+                Submit feedback
               </button>
             </form>
           )}

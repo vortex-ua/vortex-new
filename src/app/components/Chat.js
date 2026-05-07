@@ -66,9 +66,9 @@ export default function Chat({ roomId, senderId }) {
         <input 
           value={text} 
           onChange={(e) => setText(e.target.value)} 
-          placeholder="Напишите сообщение..."
+          placeholder="Type a message..."
         />
-        <button type="submit">Отправить</button>
+        <button type="submit">Send</button>
       </form>
 
       <style jsx>

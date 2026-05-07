@@ -27,7 +27,7 @@ export default function RegisterPage() {
 
         if (!res.ok) {
             const data = await res.json();
-            setError(data.error || "Ошибка регистрации");
+            setError(data.error || "Registration error");
             return;
         }
 
@@ -38,19 +38,19 @@ export default function RegisterPage() {
         <form className="form-auto" onSubmit={handleSubmit}>
             <h1>Register</h1>
 
-            <input name="email" type="email" placeholder="email" />
+            <input name="email" type="email" placeholder="Email" />
 
-            <input name="phone" type="phone" placeholder="phone" />
+            <input name="phone" type="phone" placeholder="Phone" />
 
-            <input name="password" type="password" placeholder="password" />
+            <input name="password" type="password" placeholder="Password" />
 
-            <input name="first_name" placeholder="Имя" />
+            <input name="first_name" placeholder="First Name" />
 
-            <input name="last_name" placeholder="Фамилия" />
+            <input name="last_name" placeholder="Last Name" />
 
             {error && <p style={{ color: "red" }}>{error}</p>}
 
-            <button type="submit">Зарегистрироваться</button>
+            <button type="submit">Register</button>
         </form>
     );
 }

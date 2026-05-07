@@ -13,16 +13,16 @@ export default function Projects({ projects }) {
 
   return (
     <section className='wrapper'>
-      <h1 className='titleRess'>Проекты</h1>
+      <h1 className='titleRess'>Projects</h1>
 
       <form action={CreateProject} className='formRess'>
-        <input name="title" placeholder="Название" required />
-        <input name="description" placeholder="Описание" required />
-        <input name="tech_stack" placeholder="Стек (через запятую)" required />
-        <input name="client_name" placeholder="Имя клиента" required />
-        <input name="client_feedback" placeholder="Отзыв клиента" required />
-        <input name="site_url" placeholder="link in project" required />
-        <button>Добавить проект</button>
+        <input name="title" placeholder="Title" required />
+        <input name="description" placeholder="Description" required />
+        <input name="tech_stack" placeholder="Tech stack (comma separated)" required />
+        <input name="client_name" placeholder="Client name" required />
+        <input name="client_feedback" placeholder="Client feedback" required />
+        <input name="site_url" placeholder="Project link" required />
+        <button>Add project</button>
       </form>
 
       <ul className='listRess'>
@@ -30,10 +30,10 @@ export default function Projects({ projects }) {
           <li key={project.id} className='projectRess'>
             <h3>{project.title}</h3>
             <p>{project.description}</p>
-            <p className='metaRess'><b>Клиент:</b> {project.client_name}</p>
-            <p className='metaRess'><b>Стек:</b> {project.tech_stack}</p>
+            <p className='metaRess'><b>Client:</b> {project.client_name}</p>
+            <p className='metaRess'><b>Tech stack:</b> {project.tech_stack}</p>
 
-            {/* РЕДАКТИРОВАНИЕ */}
+            {/* Editing */}
             <form action={UpdateProject} className='formRess'>
               <input type="hidden" name="id" value={project.id} />
               <input name="title" defaultValue={project.title} />
@@ -42,21 +42,21 @@ export default function Projects({ projects }) {
               <input name="client_name" defaultValue={project.client_name} />
               <input name="client_feedback" defaultValue={project.client_feedback} />
               <input name="site_url" defaultValue={project.site_url} />
-              <button>💾 Сохранить</button>
+              <button>💾 Save</button>
             </form>
 
             {project.images.length === 0 && (
               <form className='formRess' action={DeleteProject.bind(null, project.id)}>
-                <button className='danger'>❌ Удалить проект</button>
+                <button className='danger'>❌ Delete project</button>
               </form>
             )}
 
-            <h4>Картинки</h4>
+            <h4>Images</h4>
 
             <form action={CreateProjectImage} className='formRess'>
               <input type="hidden" name="project_id" value={project.id} />
-              <input name="image_url" placeholder="URL изображения" required />
-              <button>Добавить картинку</button>
+              <input name="image_url" placeholder="Image URL" required />
+              <button>Add image</button>
             </form>
 
             <div className='photosRess'>
@@ -64,7 +64,7 @@ export default function Projects({ projects }) {
                 <div key={image.id} className='photoCardRess'>
                   <div className='photoPreviewRess'>
                     <img src={image.image_url} alt={project.title} />
-                    {image.is_main && <span className='badgeRess'>⭐ Главная</span>}
+                    {image.is_main && <span className='badgeRess'>⭐ Main</span>}
                   </div>
 
                   <form action={UpdateProjectImage} className='photoFormRess'>
